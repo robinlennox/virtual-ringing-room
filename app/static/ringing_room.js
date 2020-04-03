@@ -35,6 +35,25 @@ var cur_tower_id = parseInt(cur_path[1])
 socketio.emit('c_join',{tower_id: cur_tower_id})
 
 
+//////////////
+/* The Loop */
+//////////////
+
+import Heapify from "https://unpkg.com/heapify";
+
+var queue = new Heapify(16,[],[],Array,BigUint64Array);
+
+let tick = function(q){
+    if (queue.length > 0 && q.peekPriority() < Date.now()){
+        console.log(BigInt(Date.now()) - q.peekPriority());
+        q.pop()(); // call the function
+    }
+};
+
+let clock = setInterval(tick, 50, queue);
+
+
+
 ////////////////////////
 /* SOCKETIO LISTENERS */
 ////////////////////////
@@ -385,7 +404,7 @@ bell_circle = new Vue({
       // the server rang a bell; find the correct one and ring it
 	  ring_bell: function(bell) {
 		console.log("Ringing the " + bell)
-		this.$refs.bells[bell-1].ring()
+		queue.push(this.$refs.bells[bell-1].ring, BigInt(Date.now() + 2000));
 	  },
 
     

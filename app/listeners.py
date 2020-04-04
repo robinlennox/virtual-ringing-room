@@ -107,7 +107,7 @@ def on_bell_rung(event_dict):
          {"global_bell_state": bell_state,
           "who_rang": cur_bell,
           "disagree": disagreement,
-          "time": event_dict['time']},
+          "delay": event_dict['delay']},
          broadcast=True, include_self=False, room=tower_id)
 
 

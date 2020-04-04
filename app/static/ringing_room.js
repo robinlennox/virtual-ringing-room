@@ -43,6 +43,7 @@ socketio.emit('c_join',{tower_id: cur_tower_id})
 var clock = { 
     delay: 400, // set a global delay of 400 ms
     offset: 0,
+    latency: 0,
     now: function(){ return Date.now() - this.offset; },
     next_ring: function(){ return this.now() + this.delay; }
 };
@@ -56,6 +57,7 @@ socketio.on('s_set_offset', function(msg,cb){
     clock.offset = msg.offset;
     console.log('set latency to: ' + msg.latency);
     bell_circle.$refs.controls.latency = msg.latency;
+    clock.latency = msg.latency;
 });
 
 
@@ -65,11 +67,7 @@ socketio.on('s_set_offset', function(msg,cb){
 
 // A bell was rung
 socketio.on('s_bell_rung', function(msg,cb){
-    var time_until_ring = msg.time - clock.now();
-    console.log('time until ring: ' + time_until_ring);
-    setTimeout(bell_circle.ring_bell, time_until_ring, msg.who_rang);
-    var report = "Bell " + msg.who_rang + ' will ring at ' + msg.time;
-	console.log(report);
+    bell_circle.ring_bell(msg.who_rang, msg.delay - clock.latency);
 });
 
 // A call was made
@@ -239,9 +237,7 @@ Vue.component("bell_rope", {
 		socketio.emit('c_bell_rung', {bell: this.number, 
                                       stroke: this.stroke, 
                                       tower_id: cur_tower_id,
-                                      time: time_to_ring});
-		var report = "Bell " + this.number + " will ring a " + (this.stroke ? "handstroke":"backstroke") + ' at ' + time_to_ring;
-		console.log(report);
+                                      delay: clock.delay - clock.latency });
 	  },
 
       // Ringing event received; now ring the bell
@@ -436,9 +432,9 @@ bell_circle = new Vue({
 	methods: {
       
       // the server rang a bell; find the correct one and start it ringing (with delay)
-	  ring_bell: function(bell) {
+	  ring_bell: function(bell, delay) {
 		console.log("Ringing the " + bell)
-		this.$refs.bells[bell-1].ring()
+		setTimeout(this.$refs.bells[bell-1].ring,delay);
 	  },
 
     

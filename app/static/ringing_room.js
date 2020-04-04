@@ -63,7 +63,7 @@ socketio.on('s_set_offset', function(msg,cb){
 
 // A bell was rung
 socketio.on('s_bell_rung', function(msg,cb){
-    time_until_ring = msg.time - clcok.now;
+    time_until_ring = msg.time - clock.now;
     setTimeout(bell_circle.ring_bell(msg.who_rang), time_until_ring);
 	console.log('Received event: ' + msg.global_bell_state + msg.who_rang);
 });

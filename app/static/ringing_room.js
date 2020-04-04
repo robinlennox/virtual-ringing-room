@@ -44,7 +44,7 @@ var clock = {
     delay: 500, // set a global delay of 200 ms
     offset: 0,
     now: function(){ return Date.now() - this.offset; },
-    next_ring: function(){ return this.now + this.delay }
+    next_ring: function(){ return this.now() + this.delay; }
 };
 
 socketio.on('s_ping', function(msg,cb){
@@ -63,9 +63,11 @@ socketio.on('s_set_offset', function(msg,cb){
 
 // A bell was rung
 socketio.on('s_bell_rung', function(msg,cb){
-    time_until_ring = msg.time - clock.now;
-    setTimeout(bell_circle.ring_bell(msg.who_rang), time_until_ring);
-	console.log('Received event: ' + msg.global_bell_state + msg.who_rang);
+    var time_until_ring = msg.time - clock.now();
+    console.log('time until ring: ' + time_until_ring);
+    setTimeout(bell_circle.ring_bell, time_until_ring, msg.who_rang);
+    var report = "Bell " + msg.who_rang + ' will ring at ' + msg.time;
+	console.log(report);
 });
 
 // A call was made
@@ -236,7 +238,7 @@ Vue.component("bell_rope", {
                                       stroke: this.stroke, 
                                       tower_id: cur_tower_id,
                                       time: time_to_ring});
-		var report = "Bell " + this.number + " will ring a " + (this.stroke ? "handstroke":"backstroke" + ' at ' + time_to_ring);
+		var report = "Bell " + this.number + " will ring a " + (this.stroke ? "handstroke":"backstroke") + ' at ' + time_to_ring;
 		console.log(report);
 	  },
 

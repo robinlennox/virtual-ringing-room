@@ -41,7 +41,7 @@ socketio.emit('c_join',{tower_id: cur_tower_id})
 
 
 var clock = { 
-    delay: 500, // set a global delay of 200 ms
+    delay: 400, // set a global delay of 400 ms
     offset: 0,
     now: function(){ return Date.now() - this.offset; },
     next_ring: function(){ return this.now() + this.delay; }
@@ -54,6 +54,8 @@ socketio.on('s_ping', function(msg,cb){
 
 socketio.on('s_set_offset', function(msg,cb){
     clock.offset = msg.offset;
+    console.log('set latency to: ' + msg.latency);
+    bell_circle.$refs.controls.latency = msg.latency;
 });
 
 
@@ -331,7 +333,10 @@ Vue.component('tower_controls', {
 						  12: "⑫"},
 				tower_name: '',
 				tower_id: 0,
-                audio_type: 'Tower'} },
+                audio_type: 'Tower',
+                delays: [200, 400, 600, 800],
+                cur_delay: clock.delay,
+                latency: 0} },
 
 	methods: {
 
@@ -346,6 +351,15 @@ Vue.component('tower_controls', {
           console.log('swapping audio');
           socketio.emit('c_audio_change',{old_audio: this.audio_type, tower_id: cur_tower_id})
 
+        },
+
+        set_delay: function(delay){
+            clock.delay = delay;
+            this.cur_delay = delay;
+        },
+
+        set_latency: function(latency){
+            this.latency = latency;
         },
 	},
 
@@ -369,6 +383,16 @@ Vue.component('tower_controls', {
                        >
                        Audio: [[ audio_type ]] bell
                   </div>
+                  <ul class = "tower_control_size">
+                    <li v-for="delay in delays"
+                        v-bind:delay="delay"
+                        @click="set_delay(delay)"
+                        v-bind:style="{ color: (delay == cur_delay) ? 'red' : 'black'}"
+                        >
+                        [[ delay ]]
+                    </li>
+                  </ul>
+                  <div class="latency">[[ latency ]]</div>
 			   </div>
                `,
 }); // End tower_controls

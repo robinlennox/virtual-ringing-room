@@ -2,6 +2,7 @@ from flask_socketio import emit, join_room
 from flask import session
 from app import socketio, towers
 from app.models import Tower
+from statistics import mean
 
 from datetime import datetime
 
@@ -39,7 +40,9 @@ def start_ping_sequence():
     def final_offset():
         print('getting final offset')
         offset = min(session['offset_pings'])[1]
-        emit('s_set_offset', { 'offset': offset, 'sent': now()})
+        emit('s_set_offset', { 'offset': offset, 
+                               'latency': mean([d[0] for d in session['offset_pings']]),
+                               'sent': now()})
 
     session['offset_pings'] = []
     session.modified = True

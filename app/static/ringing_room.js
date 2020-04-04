@@ -244,6 +244,7 @@ Vue.component("bell_rope", {
 
       animate_ringing: function(duration){
           var frame_duration = duration/15;
+          console.log(frame_duration);
           if (this.stroke_number == 30){ this.stroke_number = 1};
           this.advance_frame(frame_duration);
       },
@@ -251,7 +252,7 @@ Vue.component("bell_rope", {
       advance_frame: function(frame_duration){
           this.stroke_number++;
           if (!(this.stroke_number == 15 || this.stroke_number == 30)){
-              setTimeout(this.advance_frame,frame_duration);
+              setTimeout(this.advance_frame,frame_duration,frame_duration);
           };
       },
 

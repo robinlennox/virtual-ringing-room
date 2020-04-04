@@ -224,6 +224,7 @@ Vue.component("bell_rope", {
 			   circled_digits: ["①", "②", "③", "④", "⑤", "⑥", 
 								"⑦", "⑧", "⑨", "⑩", "⑪ ","⑫"],
 			   images: ["handstroke", "backstroke"],
+               stroke_number: 1,
 	  };
 	},
 
@@ -234,11 +235,25 @@ Vue.component("bell_rope", {
 	  emit_ringing_event: function() {
         var time_to_ring = clock.next_ring();
         setTimeout(this.ring, clock.delay);
+        this.animate_ringing(clock.delay);
 		socketio.emit('c_bell_rung', {bell: this.number, 
                                       stroke: this.stroke, 
                                       tower_id: cur_tower_id,
                                       delay: clock.delay - clock.latency });
 	  },
+
+      animate_ringing: function(duration){
+          var frame_duration = duration/15;
+          if (this.stroke_number == 30){ this.stroke_number = 1};
+          this.advance_frame(frame_duration);
+      },
+
+      advance_frame: function(frame_duration){
+          this.stroke_number++;
+          if (!(this.stroke_number == 15 || this.stroke_number == 30)){
+              setTimeout(this.advance_frame,frame_duration);
+          };
+      },
 
       // Ringing event received; now ring the bell
 	  ring: function(){
@@ -261,7 +276,7 @@ Vue.component("bell_rope", {
                  <img v-if="position <= number_of_bells/2"
                       @click='emit_ringing_event'
                       class="rope_img" 
-                      :src="'static/images/' + (stroke ? images[0] : images[1]) + '.png'"
+                      :src="'static/images/ringergif/r' + this.stroke_number + '.gif'"
                       />
 
                  <div class='number' 
@@ -276,7 +291,7 @@ Vue.component("bell_rope", {
                  <img class="rope_img" 
                       v-if="position > number_of_bells/2"
                       @click='emit_ringing_event'
-                      :src="'static/images/' + (stroke ? images[0] : images[1]) + '.png'"
+                      :src="'static/images/ringergif/r' + this.stroke_number + '.gif'"
                       />
 
              </div>
@@ -435,6 +450,7 @@ bell_circle = new Vue({
 	  ring_bell: function(bell, delay) {
 		console.log("Ringing the " + bell)
 		setTimeout(this.$refs.bells[bell-1].ring,delay);
+        this.$refs.bells[bell-1].animate_ringing(delay);
 	  },
 
     

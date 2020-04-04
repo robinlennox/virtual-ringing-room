@@ -35,14 +35,37 @@ var cur_tower_id = parseInt(cur_path[1])
 socketio.emit('c_join',{tower_id: cur_tower_id})
 
 
+///////////
+/* CLOCK */
+///////////
+
+
+var clock = { 
+    delay: 500, // set a global delay of 200 ms
+    offset: 0,
+    now: function(){ return Date.now() - this.offset; },
+    next_ring: function(){ return this.now + this.delay }
+};
+
+socketio.on('s_ping', function(msg,cb){
+    cb(msg.sent_time, Date.now()); // call back with received time
+    console.log('called back')
+});
+
+socketio.on('s_set_offset', function(msg,cb){
+    clock.offset = msg.offset;
+});
+
+
 ////////////////////////
 /* SOCKETIO LISTENERS */
 ////////////////////////
 
 // A bell was rung
 socketio.on('s_bell_rung', function(msg,cb){
+    time_until_ring = msg.time - clcok.now;
+    setTimeout(bell_circle.ring_bell(msg.who_rang), time_until_ring);
 	console.log('Received event: ' + msg.global_bell_state + msg.who_rang);
-	bell_circle.ring_bell(msg.who_rang);
 });
 
 // A call was made
@@ -205,11 +228,15 @@ Vue.component("bell_rope", {
 	methods: {
 
       
-      // emit a ringing event ot the server
+      // schedule the bell ringing and emit an event to the server
 	  emit_ringing_event: function() {
-		socketio.emit('c_bell_rung',
-				{bell: this.number, stroke: this.stroke, tower_id: cur_tower_id});
-		var report = "Bell " + this.number + " will ring a " + (this.stroke ? "handstroke":"backstroke");
+        var time_to_ring = clock.next_ring();
+        setTimeout(this.ring, clock.delay);
+		socketio.emit('c_bell_rung', {bell: this.number, 
+                                      stroke: this.stroke, 
+                                      tower_id: cur_tower_id,
+                                      time: time_to_ring});
+		var report = "Bell " + this.number + " will ring a " + (this.stroke ? "handstroke":"backstroke" + ' at ' + time_to_ring);
 		console.log(report);
 	  },
 
@@ -382,7 +409,7 @@ bell_circle = new Vue({
 
 	methods: {
       
-      // the server rang a bell; find the correct one and ring it
+      // the server rang a bell; find the correct one and start it ringing (with delay)
 	  ring_bell: function(bell) {
 		console.log("Ringing the " + bell)
 		this.$refs.bells[bell-1].ring()
@@ -395,15 +422,15 @@ bell_circle = new Vue({
 		this.$refs.bells[bell-1].emit_ringing_event()
 	  },
 	
-      // Like ring_bell, but calculated by the position in the circle (respecting rotation)
-	  ring_bell_by_pos: function(pos){
-			for (bell in this.bells){
-				if (this.bells[bell]['position'] == pos){
-					this.ring_bell(this.bells[bell]['number']);
-					return true;
-					}
-				}
-		},
+      // // Like ring_bell, but calculated by the position in the circle (respecting rotation)
+	  // ring_bell_by_pos: function(pos){
+			// for (bell in this.bells){
+				// if (this.bells[bell]['position'] == pos){
+					// this.ring_bell(this.bells[bell]['number']);
+					// return true;
+					// }
+				// }
+		// },
 
       // Like pull_rope, but calculated by the position in the circle (respecting rotation)
 	  pull_rope_by_pos: function(pos){

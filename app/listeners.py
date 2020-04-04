@@ -1,9 +1,49 @@
 from flask_socketio import emit, join_room
+from flask import session
 from app import socketio, towers
 from app.models import Tower
 
+from datetime import datetime
+
 # SocketIO Handlers
 
+
+#### Lag Reduction
+
+now = lambda: int(datetime.utcnow().timestamp()*1000)
+# fake_start_time = int(unix_time() - 15000)
+# now = lambda: int(unix_time())
+
+
+# Start the ping sequence on connection.
+
+@socketio.on('connect')
+def start_ping_sequence():
+    print('starting ping sequence')
+
+    def calc_latency_offset(sent, received, returned):
+        latency = (returned - sent)/2
+        offset = received - sent + latency
+        return (latency, offset)
+
+    def log_ping(sent, received):
+        returned = now()
+        print('logged a ping')
+        session['offset_pings'].append(calc_latency_offset(sent, received, returned))
+        session.modified = True
+        if len(session['offset_pings']) < 50:
+            emit('s_ping', { 'sent_time': now() }, callback = log_ping)
+        else:
+            final_offset()
+
+    def final_offset():
+        print('getting final offset')
+        offset = min(session['offset_pings'])[1]
+        emit('s_set_offset', { 'offset': offset, 'sent': now()})
+
+    session['offset_pings'] = []
+    session.modified = True
+    emit('s_ping', { 'sent_time': now() }, callback = log_ping)
 
 # The user entered a tower code on the landing page; check it
 @socketio.on('c_check_tower_id')
@@ -63,8 +103,9 @@ def on_bell_rung(event_dict):
     emit('s_bell_rung',
          {"global_bell_state": bell_state,
           "who_rang": cur_bell,
-          "disagree": disagreement},
-         broadcast=True, include_self=True, room=tower_id)
+          "disagree": disagreement,
+          "time": event_dict['time']},
+         broadcast=True, include_self=False, room=tower_id)
 
 
 # A call was made

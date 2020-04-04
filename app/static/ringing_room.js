@@ -58,19 +58,6 @@ socketio.on('s_set_offset', function(msg,cb){
     bell_circle.$refs.controls.latency = msg.latency;
 });
 
-import Heapify from "https://unpkg.com/heapify";
-
-var queue = new Heapify(16,[],[],Array,BigUint64Array);
-
-let tick = function(q){
-    if (queue.length > 0 && q.peekPriority() < clock.now()){
-        console.log(BigInt(Date.now()) - q.peekPriority());
-        q.pop()(); // call the function
-    }
-};
-
-let clock_cycle = setInterval(tick, 10, queue);
-
 
 ////////////////////////
 /* SOCKETIO LISTENERS */
@@ -78,10 +65,9 @@ let clock_cycle = setInterval(tick, 10, queue);
 
 // A bell was rung
 socketio.on('s_bell_rung', function(msg,cb){
-    // var time_until_ring = msg.time - clock.now();
-    // console.log('time until ring: ' + time_until_ring);
-    // setTimeout(bell_circle.ring_bell, time_until_ring, msg.who_rang);
-    queue.push(bell_circle.$refs[msg.who_rang-1],msg.time);
+    var time_until_ring = msg.time - clock.now();
+    console.log('time until ring: ' + time_until_ring);
+    setTimeout(bell_circle.ring_bell, time_until_ring, msg.who_rang);
     var report = "Bell " + msg.who_rang + ' will ring at ' + msg.time;
 	console.log(report);
 });
